@@ -27,17 +27,23 @@ public class PlayerCamera : MonoBehaviour
     [Header("Misc")]
     [SerializeField] Transform playerCamera;
 
+    //WASD
     float movementSpeed;
     Vector3 newPos;
+
+    //Rotation
     Vector3 currentRot;
     Vector3 startRot;
     Quaternion newRot;
-    Vector3 newZoom;
+
+    //Zoom
+    float desiredZoom = 0f;
+
 
     void Start(){
         newPos = transform.position;
         newRot = transform.rotation;
-        newZoom = playerCamera.localPosition;
+        desiredZoom = Vector3.Distance(playerCamera.position, transform.position);
     }
 
     void Update(){
@@ -83,16 +89,19 @@ public class PlayerCamera : MonoBehaviour
 
     void HandleZoom()
     {
-        //Zoom
         if (Input.mouseScrollDelta.y != 0)
-        {
-            Vector3 direction = playerCamera.localPosition - transform.localPosition;
-            direction.Normalize();
-            newZoom -= Input.mouseScrollDelta.y * direction * zoomSpeed;
-        }
+            desiredZoom -= Input.mouseScrollDelta.y * zoomSpeed;
+            //clamp the distance inside if 
 
-        playerCamera.localPosition = Vector3.Lerp(playerCamera.localPosition, newZoom, zoomTime * Time.deltaTime);
+        Vector3 direction = (playerCamera.position - transform.position).normalized;
+        Vector3 desiredPos = transform.position + direction * desiredZoom;
+
+        // Convert the desired position to the local space of the rig
+        Vector3 desiredLocalPos = transform.InverseTransformPoint(desiredPos);
+
+        playerCamera.localPosition = Vector3.Lerp(playerCamera.localPosition, desiredLocalPos, zoomTime * Time.deltaTime);
     }
+
 
     void HandleRotation()
     {
