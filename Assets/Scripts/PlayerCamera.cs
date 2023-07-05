@@ -1,5 +1,6 @@
+using System;
+using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 public class PlayerCamera : MonoBehaviour
 {
@@ -8,6 +9,7 @@ public class PlayerCamera : MonoBehaviour
 
     //Hoding MMB not only allows rotation but general camera control
     //Zooming moves the camera towards the mouse
+    //maxCameraCeiling currently not used to limit the camera
 
 
 
@@ -19,6 +21,11 @@ public class PlayerCamera : MonoBehaviour
 
     [Header("Rotation")]
     [SerializeField] float rotationSpeed;
+    [SerializeField] float upperBound;
+    [SerializeField] float maxUpper = 100f;
+    [SerializeField] float maxLower = 200f;
+    [SerializeField] float lowerBound;
+    [SerializeField] float boundOffsetMultiplier;
 
     [Header("Zoom")]
     [SerializeField] float zoomSpeed;
@@ -26,27 +33,37 @@ public class PlayerCamera : MonoBehaviour
 
     [Header("Misc")]
     [SerializeField] Transform playerCamera;
+    [SerializeField] LayerMask groundMask;
+    [SerializeField] float maxCameraCeiling = 5000f;
 
     //WASD
     float movementSpeed;
     Vector3 newPos;
+    
 
     //Rotation
     Vector3 currentRot;
     Vector3 startRot;
-    Quaternion newRot;
+    float currentYRotation;
+    float currentXRotation;
 
     //Zoom
     float desiredZoom = 0f;
 
+    //Common
+    float distanceToGround; //WASD + rot
+
 
     void Start(){
         newPos = transform.position;
-        newRot = transform.rotation;
         desiredZoom = Vector3.Distance(playerCamera.position, transform.position);
+
+        currentXRotation = 170f;  //this is likely a terrible solution
+        currentYRotation = 0f;
     }
 
     void Update(){
+        calculateCommon();
         handleKeyboardInput();
         handleMouseinput();
     }
@@ -65,7 +82,7 @@ public class PlayerCamera : MonoBehaviour
         else
             movementSpeed = normalSpeed;
 
-        float distanceToGround = Vector3.Distance(transform.localPosition, playerCamera.localPosition);
+        //increase or lower speed based on distance to ground
         movementSpeed *= (distanceToGround) / 1000 * distanceMultiplier;
 
 
@@ -96,7 +113,7 @@ public class PlayerCamera : MonoBehaviour
         Vector3 direction = (playerCamera.position - transform.position).normalized;
         Vector3 desiredPos = transform.position + direction * desiredZoom;
 
-        // Convert the desired position to the local space of the rig
+        //Convert the desired position to the local space of the rig
         Vector3 desiredLocalPos = transform.InverseTransformPoint(desiredPos);
 
         playerCamera.localPosition = Vector3.Lerp(playerCamera.localPosition, desiredLocalPos, zoomTime * Time.deltaTime);
@@ -105,21 +122,61 @@ public class PlayerCamera : MonoBehaviour
 
     void HandleRotation()
     {
-        //Rotation
         if (Input.GetMouseButtonDown(2))
             startRot = Input.mousePosition;
 
         if (Input.GetMouseButton(2))
         {
             currentRot = Input.mousePosition;
-
-            Vector3 difference = startRot - currentRot;
-            startRot = currentRot;
-
-            newRot *= Quaternion.Euler(Vector3.up * (-difference.x / 5f));
         }
 
-        transform.rotation = Quaternion.Lerp(transform.rotation, newRot, rotationSpeed * Time.deltaTime);
 
+        Vector3 difference = startRot - currentRot;
+        startRot = currentRot;
+
+        //Increment currentYRotation and currentXRotation
+        currentYRotation -= difference.x;
+        currentXRotation += difference.y;
+
+        //Calculating distance offset, closer to ground -> looking higher
+        float multiplier = distanceToGround / maxCameraCeiling;
+        multiplier *= multiplier; //pow 2
+
+        float currentUpper = lerpValues(upperBound, maxUpper, multiplier);
+        float currentLower = lerpValues(lowerBound, maxLower, multiplier);
+
+        //Clamp currentXRotation
+        currentXRotation = Mathf.Clamp(currentXRotation, currentUpper, currentLower);
+
+        Quaternion targetYRotation = Quaternion.Euler(0, currentYRotation / 5f, 0);
+        Quaternion targetXRotation = Quaternion.Euler(currentXRotation / 5f, 0, 0);
+
+        //Rotate the rig (parent) around world's Y axis
+        transform.rotation = Quaternion.Lerp(transform.rotation, targetYRotation, rotationSpeed * Time.deltaTime);
+
+        //Rotate the camera around its local X axis
+        playerCamera.localRotation = Quaternion.Lerp(playerCamera.localRotation, targetXRotation, rotationSpeed * Time.deltaTime);
+    }
+
+
+    void calculateCommon()
+    {
+        //distance from camera to ground
+        if (Physics.Raycast(playerCamera.position, Vector3.down, out RaycastHit hit, maxCameraCeiling, groundMask))
+            distanceToGround = hit.distance;
+        else
+            distanceToGround = maxCameraCeiling;
+
+    }
+
+    float lerpValues(float a, float b, float t)
+    {
+        if (a > b)  //set a to lower
+            (a, b) = (b, a);
+
+        float dist = b - a;
+        dist *= t;
+
+        return a + dist;
     }
 }

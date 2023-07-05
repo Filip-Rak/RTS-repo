@@ -1644,9 +1644,18 @@ MonoBehaviour:
   distanceMultiplier: 1
   WASDTime: 6
   rotationSpeed: 8
+  upperBound: -50
+  maxUpper: 100
+  maxLower: 300
+  lowerBound: 170
+  boundOffsetMultiplier: 5
   zoomSpeed: 15
   zoomTime: 7
   playerCamera: {fileID: 963194228}
+  groundMask:
+    serializedVersion: 2
+    m_Bits: 8
+  maxCameraCeiling: 300
 --- !u!1 &210104138
 GameObject:
   m_ObjectHideFlags: 0
@@ -7450,8 +7459,8 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 963194225}
-  m_LocalRotation: {x: 0.3000193, y: 0, z: 0, w: 0.9539331}
-  m_LocalPosition: {x: 0, y: 59.3, z: -49.1}
+  m_LocalRotation: {x: 0.2923699, y: 0, z: 0, w: 0.9563054}
+  m_LocalPosition: {x: -0.0000028611387, y: 70.85363, z: -58.666275}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -10913,7 +10922,7 @@ GameObject:
   - component: {fileID: 1595670956}
   - component: {fileID: 1595670955}
   - component: {fileID: 1595670954}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Ground
   m_TagString: Untagged
   m_Icon: {fileID: 0}
