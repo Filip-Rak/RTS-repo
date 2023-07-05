@@ -1644,12 +1644,12 @@ MonoBehaviour:
   distanceMultiplier: 1
   WASDTime: 6
   rotationSpeed: 8
-  upperBound: -50
-  maxUpper: 100
+  upperBound: 250
+  maxUpper: -100
   maxLower: 300
-  lowerBound: 170
-  boundOffsetMultiplier: 5
-  zoomSpeed: 15
+  lowerBound: 100
+  angleSwitchHeight: 300
+  zoomSpeed: 30
   zoomTime: 7
   playerCamera: {fileID: 963194228}
   groundMask:

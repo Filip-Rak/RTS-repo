@@ -7,34 +7,34 @@ public class PlayerCamera : MonoBehaviour
 
     //TO DO
 
-    //Hoding MMB not only allows rotation but general camera control
     //Zooming moves the camera towards the mouse
-    //maxCameraCeiling currently not used to limit the camera
+    //camera height bounds
 
 
 
     [Header("WASD")]
-    [SerializeField] float fastSpeed;
-    [SerializeField] float normalSpeed;
-    [SerializeField] float distanceMultiplier;
-    [SerializeField] float WASDTime;
+    [SerializeField] float fastSpeed = 5f;
+    [SerializeField] float normalSpeed = 3f;
+    [SerializeField] float distanceMultiplier = 1f;
+    [SerializeField] float WASDTime = 6f;
 
     [Header("Rotation")]
-    [SerializeField] float rotationSpeed;
-    [SerializeField] float upperBound;
-    [SerializeField] float maxUpper = 100f;
-    [SerializeField] float maxLower = 200f;
-    [SerializeField] float lowerBound;
-    [SerializeField] float boundOffsetMultiplier;
+    [SerializeField] float rotationSpeed = 8f;
+    [SerializeField] float upperBound = 250f;
+    [SerializeField] float maxUpper = -100f;
+    [SerializeField] float maxLower = 300f;
+    [SerializeField] float lowerBound = 100f;
+    [SerializeField] float angleSwitchHeight = 300f;
 
     [Header("Zoom")]
-    [SerializeField] float zoomSpeed;
-    [SerializeField] float zoomTime;
+    [SerializeField] float zoomSpeed = 30f;
+    [SerializeField] float zoomTime = 7f;
 
     [Header("Misc")]
     [SerializeField] Transform playerCamera;
     [SerializeField] LayerMask groundMask;
-    [SerializeField] float maxCameraCeiling = 5000f;
+    [SerializeField] float maxCameraCeiling = 600f;
+    //[SerializeField] float minCameraCeiling = 10f;
 
     //WASD
     float movementSpeed;
@@ -108,16 +108,17 @@ public class PlayerCamera : MonoBehaviour
     {
         if (Input.mouseScrollDelta.y != 0)
             desiredZoom -= Input.mouseScrollDelta.y * zoomSpeed;
-            //clamp the distance inside if 
 
         Vector3 direction = (playerCamera.position - transform.position).normalized;
         Vector3 desiredPos = transform.position + direction * desiredZoom;
 
+
         //Convert the desired position to the local space of the rig
-        Vector3 desiredLocalPos = transform.InverseTransformPoint(desiredPos);
+        Vector3 desiredLocalPos = transform.InverseTransformPoint(desiredPos);     
 
         playerCamera.localPosition = Vector3.Lerp(playerCamera.localPosition, desiredLocalPos, zoomTime * Time.deltaTime);
     }
+   
 
 
     void HandleRotation()
@@ -126,9 +127,7 @@ public class PlayerCamera : MonoBehaviour
             startRot = Input.mousePosition;
 
         if (Input.GetMouseButton(2))
-        {
             currentRot = Input.mousePosition;
-        }
 
 
         Vector3 difference = startRot - currentRot;
@@ -139,8 +138,9 @@ public class PlayerCamera : MonoBehaviour
         currentXRotation += difference.y;
 
         //Calculating distance offset, closer to ground -> looking higher
-        float multiplier = distanceToGround / maxCameraCeiling;
-        multiplier *= multiplier; //pow 2
+        float multiplier = distanceToGround / angleSwitchHeight;
+        multiplier = Math.Clamp(multiplier, 0, 1);
+        multiplier *= multiplier * multiplier; //pow 3
 
         float currentUpper = lerpValues(upperBound, maxUpper, multiplier);
         float currentLower = lerpValues(lowerBound, maxLower, multiplier);
